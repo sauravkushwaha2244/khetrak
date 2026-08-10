@@ -4,9 +4,9 @@
 //                                 on-device personalization
 
 import { OfflineManager, registerServiceWorker } from './offline.js';
-import { SeverityEngine, TrendTracker, renderTrendChart } from './severity.js';
+import { SeverityEngine } from './severity.js';
 import { ImagePreprocessor } from './preprocessor.js';
-import { FeedbackSystem, initFollowUpChecker } from './feedback.js';
+import { FeedbackSystem } from './feedback.js';
 import { OutbreakSystem } from './outbreak.js';
 import { YieldCalculator, DEFAULT_MANDI_PRICES } from './yield.js';
 import { Personalizer } from './personalizer.js';
@@ -36,8 +36,6 @@ async function init() {
   updateScanCount();
   updatePersonalizationBadge();
 
-  // Level 5: check for due follow-ups
-  initFollowUpChecker(showFollowUpCard);
 
   // Level 5: fetch location silently for outbreak alerts
   OutbreakSystem.getUserLocation().then(loc => {
@@ -48,7 +46,61 @@ async function init() {
 
 // ── Metadata & Model ──────────────────────────────────────────────────────────
 async function loadMetadata() {
-  try { const r = await fetch('./model_metadata.json'); metadata = await r.json(); }
+  try { 
+    const r = await fetch('./model_metadata.json'); 
+    metadata = await r.json(); 
+    
+    // Dynamically populate crop filter dropdown
+    const filter = $('crop-filter');
+    if (filter) {
+      filter.innerHTML = '<option value="all">All crops</option>';
+      metadata.crops.forEach(crop => {
+        const opt = document.createElement('option');
+        opt.value = crop;
+        opt.textContent = `🌿 ${crop}`;
+        filter.appendChild(opt);
+      });
+    }
+
+    // Dynamically populate info panel
+    const countEl = $('total-crops-count');
+    if (countEl) countEl.textContent = metadata.crops.length;
+    
+    const container = $('crop-info-container');
+    if (container) {
+      container.innerHTML = '';
+      metadata.crops.forEach(crop => {
+        const cropClasses = metadata.classes.filter(c => c.crop === crop);
+        const diseasesHtml = cropClasses.map(c => `<span class="chip">${c.disease}</span>`).join('');
+        
+        // Pick an icon based on crop name (simple heuristic)
+        let icon = '🌿';
+        if (crop.includes('Millet') || crop.includes('Wheat') || crop.includes('Rice')) icon = '🌾';
+        else if (crop.includes('Pea') || crop.includes('Gram') || crop.includes('Lentil') || crop.includes('Bean')) icon = '🫘';
+        else if (crop.includes('Sorghum') || crop.includes('Maize')) icon = '🌽';
+        else if (crop.includes('Tomato') || crop.includes('Chilli') || crop.includes('Potato')) icon = '🍅';
+        else if (crop.includes('Mango') || crop.includes('Apple') || crop.includes('Banana')) icon = '🍎';
+
+        const cardHtml = `
+          <div class="crop-info-card">
+            <div class="crop-info-header">
+              <span class="crop-info-icon">${icon}</span>
+              <div>
+                <div class="crop-info-name">${crop}</div>
+                <div class="crop-info-region">${cropClasses.length} trackable diseases</div>
+              </div>
+            </div>
+            <div class="crop-info-body">
+              <div class="disease-chips">
+                ${diseasesHtml}
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += cardHtml;
+      });
+    }
+  }
   catch (e) { console.error('[App] Metadata failed', e); }
 }
 async function loadModel() {
@@ -97,8 +149,6 @@ function setupEventListeners() {
   // Level 5: confirm diagnosis buttons
   document.addEventListener('click', e => {
     if (e.target.matches('[data-confirm]')) handleDiagnosisConfirm(e.target.dataset.confirm);
-    if (e.target.matches('[data-outcome]')) handleOutcomeResponse(e.target.dataset.scanId, e.target.dataset.outcome);
-    if (e.target.id === 'dismiss-followup') dismissFollowUp();
   });
 
   // Toggle: use enhanced image
@@ -225,28 +275,25 @@ async function analyzeImage() {
     const sev  = await SeverityEngine.analyse(src);
 
     updateLoadingStep(2);
-    const key  = `${cls.crop}_${cls.disease}`;
-    if (sev.percentage !== null) TrendTracker.addReading(key, sev.percentage);
-    const trendDir = TrendTracker.getTrend(key);
-    const trendR   = TrendTracker.getReadings(key);
 
-    lastResult = { cls, confidence: calibratedConf, rawConf, sev, trendDir, trendR, key };
+    lastResult = { cls, confidence: calibratedConf, rawConf, sev };
     displayResults(lastResult);
     addToHistory(lastResult);
-
-    // Level 5: register for follow-up
-    FeedbackSystem.registerFollowUp(lastResult.ts || Date.now(), cls.disease, cls.crop, sev.stage, 'organic');
 
     // Level 5: populate yield calculator defaults
     populateYieldDefaults(cls.crop, sev);
 
-  } catch (e) { console.error(e); showSection('preview'); alert('Analysis failed. Try again.'); }
+  } catch (e) { 
+    console.error('[Analyze Error]', e); 
+    showSection('preview'); 
+    alert(`Analysis failed. Error: ${e.message}`); 
+  }
   finally { isAnalyzing = false; }
 }
 function simpleHash(s) { let h = 0; for (const c of s) h = ((h << 5) - h + c.charCodeAt(0)) | 0; return Math.abs(h); }
 
 // ── Display Results ───────────────────────────────────────────────────────────
-function displayResults({ cls, confidence, rawConf, sev, trendDir, trendR }) {
+function displayResults({ cls, confidence, rawConf, sev }) {
   $('disease-name').textContent = cls.disease;
   $('crop-badge').textContent   = cls.crop;
   $('disease-desc').textContent = cls.description;
@@ -288,8 +335,6 @@ function displayResults({ cls, confidence, rawConf, sev, trendDir, trendR }) {
   // Preprocess summary
   showPreprocessSummary();
 
-  // Trend
-  renderTrendSection(trendR, trendDir);
 
   // Level 5 sections
   renderConfirmDiagnosisCard(cls);
@@ -319,16 +364,6 @@ function showPreprocessSummary() {
     : `<span class="preprocess-tag preprocess-fixed">✨ ${corrections.length} enhancements applied (score ${qualityScore}/100)</span>${issues.map(i => `<span class="preprocess-issue">${i.icon} ${i.label}</span>`).join('')}`;
 }
 
-function renderTrendSection(readings, trendDir) {
-  const s = $('trend-section'); if (readings.length < 1) { s.classList.add('hidden'); return; }
-  s.classList.remove('hidden');
-  const dm = { worsening: { emoji: '📈', text: 'Worsening', cls: 'trend-bad', msg: 'Disease spreading. Escalate treatment.' }, improving: { emoji: '📉', text: 'Improving', cls: 'trend-good', msg: 'Treatment working. Continue protocol.' }, stable: { emoji: '➡️', text: 'Stable', cls: 'trend-neutral', msg: 'No change. Monitor closely.' }, insufficient: { emoji: '📊', text: 'First scan', cls: 'trend-neutral', msg: 'Scan again in 3–5 days.' } };
-  const d = dm[trendDir] || dm.insufficient;
-  $('trend-info').innerHTML = `<span class="trend-badge ${d.cls}">${d.emoji} ${d.text}</span><span class="trend-reading-count">${readings.length} reading${readings.length > 1 ? 's' : ''}</span>`;
-  $('trend-message').textContent = d.msg;
-  if (readings.length >= 2) { $('trend-chart-wrap').classList.remove('hidden'); renderTrendChart($('trend-canvas'), readings); }
-  else $('trend-chart-wrap').classList.add('hidden');
-}
 
 // ── Level 5: Confirm diagnosis card ──────────────────────────────────────────
 function renderConfirmDiagnosisCard(cls) {
@@ -389,50 +424,6 @@ function recalcYield() {
   }
 }
 
-// ── Level 5: Follow-up card ───────────────────────────────────────────────────
-function showFollowUpCard(entry) {
-  const existing = $('followup-overlay'); if (existing) existing.remove();
-  const overlay  = document.createElement('div');
-  overlay.id        = 'followup-overlay';
-  overlay.className = 'followup-overlay';
-  overlay.innerHTML = `
-    <div class="followup-card">
-      <div class="followup-header">
-        <span class="followup-icon">🌾</span>
-        <div>
-          <div class="followup-title">Treatment Follow-up</div>
-          <div class="followup-sub">${entry.disease} · ${entry.crop}</div>
-        </div>
-        <button id="dismiss-followup" class="close-btn">✕</button>
-      </div>
-      <p class="followup-question">It's been ${FOLLOW_UP_DAYS} days since you applied treatment.<br/><strong>Did it work?</strong></p>
-      <div class="followup-actions">
-        <button class="btn btn-success" data-outcome="worked" data-scan-id="${entry.scanId}">✅ Yes, it worked</button>
-        <button class="btn btn-amber"   data-outcome="partial" data-scan-id="${entry.scanId}">⚠️ Partially</button>
-        <button class="btn btn-danger"  data-outcome="failed"  data-scan-id="${entry.scanId}">❌ No, it failed</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  // Animate in
-  requestAnimationFrame(() => overlay.classList.add('visible'));
-}
-function handleOutcomeResponse(scanId, outcome) {
-  FeedbackSystem.recordOutcome(scanId, outcome);
-  const overlay = $('followup-overlay');
-  if (overlay) {
-    const msgs = { worked: '🎉 Great! Treatment worked. Data saved for community insights.', partial: '📊 Noted. Consider escalating to chemical treatment.', failed: '🔴 Sorry to hear that. Updating disease model for your field.' };
-    overlay.querySelector('.followup-card').innerHTML = `<div class="followup-done">${msgs[outcome] || ''}</div>`;
-    setTimeout(() => { overlay.classList.remove('visible'); setTimeout(() => overlay.remove(), 400); }, 2500);
-  }
-  // Personalizer update
-  if (lastResult) Personalizer.recordSample(lastResult.cls.disease, lastResult.cls.crop, lastResult.confidence, outcome === 'worked' ? 'correct' : 'wrong');
-  updatePersonalizationBadge();
-}
-function dismissFollowUp() {
-  const overlay = $('followup-overlay');
-  if (overlay) { overlay.classList.remove('visible'); setTimeout(() => overlay.remove(), 400); }
-}
-const FOLLOW_UP_DAYS = 7;
 
 // ── Level 5: Outbreak Alerts ──────────────────────────────────────────────────
 function renderOutbreakAlerts() {
@@ -535,8 +526,7 @@ function renderHistory() {
 function replayHistory(e) {
   const cls = metadata.classes.find(c => c.disease === e.disease && c.crop === e.crop); if (!cls) return;
   currentImage = e.thumbnail; $('preview-img').src = currentImage;
-  const key = `${e.crop}_${e.disease}`;
-  displayResults({ cls, confidence: e.confidence / 100, rawConf: e.confidence / 100, sev: { percentage: e.sevPct, stage: e.sevStage || 'unknown' }, trendDir: TrendTracker.getTrend(key), trendR: TrendTracker.getReadings(key), key });
+  displayResults({ cls, confidence: e.confidence / 100, rawConf: e.confidence / 100, sev: { percentage: e.sevPct, stage: e.sevStage || 'unknown' } });
 }
 function clearHistory() {
   history = []; localStorage.removeItem('khetrak-history');

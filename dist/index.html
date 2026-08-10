@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#0a0f1a"/>
   <meta name="description" content="KhetRak – Offline crop disease detection with severity estimation, real-world robustness and a full feedback loop for rural Indian farmers."/>
   <title>KhetRak – Offline Crop Disease Detection</title>
-  <link rel="manifest" href="./assets/manifest-BPwQyt7p.json"/>
+  <link rel="manifest" href="./manifest.json"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
-  <script type="module" crossorigin src="./assets/index-Dan1w7aR.js"></script>
+  <script type="module" crossorigin src="./assets/index-53aBIWA8.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-CkLgDLHA.css">
 </head>
 <body>
@@ -272,15 +272,7 @@
           </div>
         </div>
 
-        <!-- L3: Trend -->
-        <div id="trend-section" class="trend-card hidden">
-          <div class="trend-header">
-            <div class="trend-title-wrap"><span class="trend-icon">📈</span><div><div class="trend-title">Severity Trend</div><div class="trend-subtitle">Disease progression over time</div></div></div>
-            <div id="trend-info" class="trend-info"></div>
-          </div>
-          <p id="trend-message" class="trend-message"></p>
-          <div id="trend-chart-wrap" class="trend-chart-wrap hidden"><canvas id="trend-canvas" class="trend-canvas"></canvas></div>
-        </div>
+
 
         <!-- Treatment -->
         <div class="treatment-card">
@@ -337,19 +329,15 @@
 
     <!-- ── INFO PANEL ──────────────────────────────────────────────────────── -->
     <div id="info-panel" class="tab-panel hidden">
-      <h3 class="panel-title">Supported Crops</h3>
-      <div class="crop-info-card"><div class="crop-info-header millet"><span class="crop-info-icon">🌾</span><div><div class="crop-info-name">Pearl Millet (Bajra)</div><div class="crop-info-region">Rajasthan · Gujarat · Haryana</div></div></div><div class="crop-info-body"><p>Critical food security crop for 90 million dryland farmers. ~7 million hectares in India.</p><div class="disease-chips"><span class="chip">Downy Mildew</span><span class="chip">Blast Disease</span><span class="chip">Ergot</span></div></div></div>
-      <div class="crop-info-card"><div class="crop-info-header pigeonpea"><span class="crop-info-icon">🫘</span><div><div class="crop-info-name">Pigeon Pea (Arhar / Tur Dal)</div><div class="crop-info-region">Maharashtra · Karnataka · MP</div></div></div><div class="crop-info-body"><p>India's largest producer. Vital protein source for ~1 billion vegetarian Indians.</p><div class="disease-chips"><span class="chip">Fusarium Wilt</span><span class="chip">Sterility Mosaic</span><span class="chip">Phytophthora Blight</span></div></div></div>
-      <div class="crop-info-card"><div class="crop-info-header sorghum"><span class="crop-info-icon">🌽</span><div><div class="crop-info-name">Sorghum (Jowar)</div><div class="crop-info-region">Karnataka · Maharashtra · AP</div></div></div><div class="crop-info-body"><p>Drought-tolerant backbone of semi-arid dryland farming.</p><div class="disease-chips"><span class="chip">Grain Mold</span><span class="chip">Leaf Blight</span><span class="chip">Covered Kernel Smut</span></div></div></div>
+      <h3 class="panel-title">Supported Crops (<span id="total-crops-count">3</span>)</h3>
+      <div id="crop-info-container">
+        <!-- Dynamically populated from metadata -->
+      </div>
+      
       <div class="tech-card l4-card">
         <div class="tech-header">🔄 The Level 5 Feedback Loop</div>
         <div class="tech-steps">
-          <div class="tech-step"><div class="tech-num">1</div><div class="tech-desc">Farmer scans leaf → model diagnoses + estimates severity in ₹</div></div>
-          <div class="tech-step"><div class="tech-num">2</div><div class="tech-desc">Farmer confirms/rejects diagnosis → model calibrates confidence locally</div></div>
-          <div class="tech-step"><div class="tech-num">3</div><div class="tech-desc">After 7 days: "Did treatment work?" → outcome stored, model further calibrated</div></div>
-          <div class="tech-step"><div class="tech-num">4</div><div class="tech-desc">Confirmed outbreaks geo-tagged → nearby farmers get alerts before they see symptoms</div></div>
-          <div class="tech-step"><div class="tech-num">5</div><div class="tech-desc">All data stays on-device — no server, no data cost, works in zero-connectivity villages</div></div>
-        </div>
+        
       </div>
     </div>
 
