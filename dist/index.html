@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0a0f1a"/>
+  <meta name="description" content="KhetRak – Offline crop disease detection with severity estimation, real-world robustness and a full feedback loop for rural Indian farmers."/>
+  <title>KhetRak – Offline Crop Disease Detection</title>
+  <link rel="manifest" href="./assets/manifest-BPwQyt7p.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+  <script type="module" crossorigin src="./assets/index-Dan1w7aR.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CkLgDLHA.css">
+</head>
+<body>
+
+  <!-- Offline banner -->
+  <div id="offline-banner" class="offline-banner hidden">
+    <span class="offline-icon">📡</span><span>You're offline – using cached model</span>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🌿</div>
+        <div class="logo-text">
+          <span class="logo-name">KhetRak</span>
+          <span class="logo-tagline">Khet ki Raksha</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="personalization-pill">
+          🧠 <span id="personalization-count">0</span> confirmations
+        </div>
+        <div class="network-status">
+          <span id="status-dot" class="status-dot online"></span>
+          <span id="status-text" class="status-text">Online</span>
+        </div>
+        <div id="model-status" class="model-status loading">Loading…</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        <span>Detect · Measure · Treat · Track · Learn — entirely on-device</span>
+      </div>
+      <h1 class="hero-title">
+        The only app that learns<br/>
+        <span class="hero-gradient">from your field, not the lab</span>
+      </h1>
+      <p class="hero-subtitle">
+        Real-world robustness · Stage-aware treatment · Yield loss in ₹ ·
+        Disease outbreak alerts · Model that improves with every confirmed scan.
+      </p>
+      <div class="stats-bar">
+        <div class="stat"><div class="stat-value">9</div><div class="stat-label">Diseases</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-value">5</div><div class="stat-label">Levels</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-value" id="scan-count">0</div><div class="stat-label">Your scans</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Offline</div></div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active"  data-tab="scan-panel"><span class="tab-icon">🔍</span> Scan</button>
+      <button class="tab-btn"         data-tab="history-panel"><span class="tab-icon">📋</span> History</button>
+      <button class="tab-btn"         data-tab="alerts-panel"><span class="tab-icon">🚨</span> Alerts</button>
+      <button class="tab-btn"         data-tab="info-panel"><span class="tab-icon">🌾</span> Crops</button>
+    </div>
+
+    <!-- ── SCAN PANEL ──────────────────────────────────────────────────────── -->
+    <div id="scan-panel" class="tab-panel">
+
+      <div class="filter-row">
+        <label class="filter-label" for="crop-filter">Crop:</label>
+        <select id="crop-filter" class="crop-filter">
+          <option value="all">All crops</option>
+          <option value="Millet">🌾 Millet</option>
+          <option value="Pigeon Pea">🫘 Pigeon Pea</option>
+          <option value="Sorghum">🌽 Sorghum</option>
+        </select>
+      </div>
+
+      <!-- Upload -->
+      <div id="upload-area" class="upload-area" role="button" tabindex="0">
+        <div class="upload-icon-wrap">
+          <div class="upload-icon">🍃</div>
+          <div class="upload-rings"><div class="ring ring-1"></div><div class="ring ring-2"></div><div class="ring ring-3"></div></div>
+        </div>
+        <h2 class="upload-title">Upload a leaf photo</h2>
+        <p class="upload-desc">Any quality — dark, blurry, shadowy.<br/>Auto-corrected before detection.</p>
+        <div class="upload-actions">
+          <button id="camera-btn" class="btn btn-camera" onclick="event.stopPropagation()">📷 Camera</button>
+          <div class="upload-divider">or</div>
+          <div class="btn btn-upload">📁 Browse</div>
+        </div>
+        <div class="upload-robustness-note">
+          <span class="rb-tag">🛡️ Noise-robust</span><span class="rb-tag">🌑 Low-light</span>
+          <span class="rb-tag">🌀 Blur-corrected</span><span class="rb-tag">📴 Works offline</span>
+        </div>
+        <input id="file-input" type="file" accept="image/*" class="hidden-input"/>
+      </div>
+
+      <!-- Preprocessing spinner -->
+      <div id="preprocessing-section" class="preprocessing-section hidden">
+        <div class="preprocessing-card">
+          <div class="prep-anim"><div class="prep-circle"></div><span class="prep-emoji">🔎</span></div>
+          <p id="preprocessing-status" class="prep-status">Analysing image quality…</p>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div id="preview-section" class="preview-section hidden">
+
+        <!-- L4: Quality card -->
+        <div id="quality-card" class="quality-card hidden">
+          <div class="quality-header">
+            <div class="quality-header-left">
+              <span class="quality-icon">🔬</span>
+              <div><div class="quality-title">Image Quality Analysis</div><div class="quality-subtitle">Auto-corrected for best results</div></div>
+            </div>
+            <div class="quality-score-wrap"><span id="quality-score" class="quality-score-num">—</span><span class="quality-score-denom">/100</span></div>
+          </div>
+          <div class="quality-bar-track"><div id="quality-bar" class="quality-bar-fill" style="width:0%"></div></div>
+          <div class="quality-label-row"><span id="quality-label" class="quality-label-text"></span></div>
+          <div class="quality-columns">
+            <div class="quality-col"><div class="quality-col-title">Issues detected</div><ul id="quality-issues" class="quality-list"></ul></div>
+            <div class="quality-col"><div class="quality-col-title">Corrections applied</div><ul id="quality-fixes" class="quality-list"></ul></div>
+          </div>
+          <div class="quality-toggle-row">
+            <label class="toggle-label" for="use-enhanced-toggle">
+              <input id="use-enhanced-toggle" type="checkbox" checked class="toggle-input"/>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">Use auto-enhanced image</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-header"><span class="preview-badge">📸 Ready to analyse</span></div>
+          <div class="preview-image-wrap">
+            <img id="preview-img" class="preview-img" alt="Leaf preview"/>
+            <div class="preview-overlay"><div class="scan-line"></div></div>
+          </div>
+          <div class="preview-actions">
+            <button id="retake-btn" class="btn btn-secondary">↩ Retake</button>
+            <button id="analyze-btn" class="btn btn-primary"><span class="btn-icon">🔬</span> Analyse Now</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading-section" class="loading-section hidden">
+        <div class="loading-card">
+          <div class="loading-anim"><div class="loading-circle"></div><div class="loading-leaf">🌿</div></div>
+          <h3 class="loading-title">Analysing on your device…</h3>
+          <p class="loading-subtitle">TF.js · No internet · Personalised model</p>
+          <div class="loading-dots"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+          <div class="loading-steps">
+            <div class="step active">🖼 Classifying disease</div>
+            <div class="step">📐 Estimating severity</div>
+            <div class="step">📈 Computing trend</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RESULTS ─────────────────────────────────────────────────────── -->
+      <div id="results-section" class="results-section hidden">
+
+        <!-- L4: Preprocess summary -->
+        <div class="preprocess-result-row"><div id="preprocess-summary" class="preprocess-summary"></div></div>
+
+        <!-- Detection -->
+        <div class="result-card">
+          <div class="result-header">
+            <div class="result-icon">🔬</div>
+            <div class="result-title-wrap">
+              <div class="result-meta">
+                <span id="crop-badge" class="crop-badge">Crop</span>
+                <span id="severity-badge" class="severity-badge high">🔴 High Risk</span>
+                <span id="personalized-badge" class="personalized-badge hidden">🧠 Personalised</span>
+              </div>
+              <h2 id="disease-name" class="result-disease">Disease</h2>
+            </div>
+          </div>
+          <div class="confidence-wrap">
+            <div class="confidence-label"><span>Detection confidence</span><span id="confidence-value" class="confidence-value">--</span></div>
+            <div class="confidence-track"><div id="confidence-bar" class="confidence-fill" style="width:0%"></div></div>
+          </div>
+          <div class="result-block">
+            <div class="block-label">📋 About this disease</div>
+            <p id="disease-desc" class="block-text"></p>
+          </div>
+        </div>
+
+        <!-- L3: Severity -->
+        <div class="severity-card">
+          <div class="severity-card-header">
+            <div class="sev-header-left"><span class="sev-icon">📐</span><div><div class="sev-title">Leaf Area Affected</div><div class="sev-subtitle">On-device pixel segmentation</div></div></div>
+            <div class="sev-pct-badge"><span id="sev-percentage" class="sev-pct-value">—</span></div>
+          </div>
+          <div id="sev-meter-wrap" class="sev-meter-wrap">
+            <div class="sev-track"><div id="sev-bar" class="sev-bar" style="width:0%"></div></div>
+            <div class="sev-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+            <div class="sev-stage-row"><span id="sev-stage-label" class="sev-stage-label">—</span><span id="sev-urgency" class="sev-urgency">—</span></div>
+          </div>
+          <div id="sev-unknown-msg" class="sev-unknown hidden">❓ Retake with clearer leaf isolation.</div>
+          <div class="sev-legend">
+            <div class="sev-legend-item"><span class="sev-dot" style="background:#22c55e"></span>Trace (0–10%)</div>
+            <div class="sev-legend-item"><span class="sev-dot" style="background:#84cc16"></span>Mild (10–25%)</div>
+            <div class="sev-legend-item"><span class="sev-dot" style="background:#f59e0b"></span>Moderate (25–50%)</div>
+            <div class="sev-legend-item"><span class="sev-dot" style="background:#ef4444"></span>Severe (50–75%)</div>
+            <div class="sev-legend-item"><span class="sev-dot" style="background:#7f1d1d"></span>Critical (&gt;75%)</div>
+          </div>
+        </div>
+
+        <!-- L3: Advisory -->
+        <div id="stage-advisory-box" class="advisory-box advisory-trace">
+          <div class="advisory-icon">💡</div>
+          <p id="stage-advisory-text" class="advisory-text"></p>
+        </div>
+
+        <!-- ── L5: YIELD CALCULATOR ────────────────────────────────────────── -->
+        <div id="yield-card" class="yield-card hidden">
+          <div class="yield-header">
+            <span class="yield-icon">💰</span>
+            <div><div class="yield-title">Estimated Yield Loss</div><div class="yield-subtitle">Enter your field details for ₹ impact</div></div>
+          </div>
+          <div class="yield-inputs">
+            <div class="yield-input-group">
+              <label class="yield-label">Field area (acres)</label>
+              <input id="yield-area"  type="number" class="yield-input" value="2" min="0.1" max="100" step="0.5"/>
+            </div>
+            <div class="yield-input-group">
+              <label class="yield-label">Mandi price (₹/quintal)</label>
+              <input id="yield-price" type="number" class="yield-input" value="3000" min="500" max="20000" step="100"/>
+            </div>
+          </div>
+          <div class="yield-results">
+            <div class="yield-stat">
+              <div class="yield-stat-label">Yield Loss</div>
+              <div id="yield-loss-pct" class="yield-stat-val yield-red">—</div>
+            </div>
+            <div class="yield-stat">
+              <div class="yield-stat-label">Quintals Lost</div>
+              <div id="yield-quintals" class="yield-stat-val">—</div>
+            </div>
+            <div class="yield-stat">
+              <div class="yield-stat-label">₹ Loss</div>
+              <div id="yield-rupees" class="yield-stat-val yield-red">—</div>
+            </div>
+            <div class="yield-stat">
+              <div class="yield-stat-label">₹ Saved if treated now</div>
+              <div id="yield-saved" class="yield-stat-val yield-green">—</div>
+            </div>
+          </div>
+          <div class="yield-schemes-section">
+            <div class="yield-schemes-title">📋 Govt. Scheme Eligibility</div>
+            <div id="yield-schemes"></div>
+          </div>
+        </div>
+
+        <!-- L3: Trend -->
+        <div id="trend-section" class="trend-card hidden">
+          <div class="trend-header">
+            <div class="trend-title-wrap"><span class="trend-icon">📈</span><div><div class="trend-title">Severity Trend</div><div class="trend-subtitle">Disease progression over time</div></div></div>
+            <div id="trend-info" class="trend-info"></div>
+          </div>
+          <p id="trend-message" class="trend-message"></p>
+          <div id="trend-chart-wrap" class="trend-chart-wrap hidden"><canvas id="trend-canvas" class="trend-canvas"></canvas></div>
+        </div>
+
+        <!-- Treatment -->
+        <div class="treatment-card">
+          <div class="treatment-header"><span class="treatment-icon">💊</span><h3 class="treatment-title">Stage-Aware Treatment Plan</h3></div>
+          <div class="treatment-tabs">
+            <button class="treatment-tab active" data-treatment="organic-panel">🌱 Organic</button>
+            <button class="treatment-tab" data-treatment="chemical-panel">🧪 Chemical</button>
+            <button class="treatment-tab" data-treatment="affordable-panel">💰 Budget</button>
+          </div>
+          <div id="organic-panel" class="treatment-content"><div class="treatment-tag">Eco-friendly</div><p id="organic-treatment" class="treatment-text"></p></div>
+          <div id="chemical-panel" class="treatment-content hidden"><div class="treatment-tag treatment-tag-warning">Wear protective gear</div><p id="chemical-treatment" class="treatment-text"></p></div>
+          <div id="affordable-panel" class="treatment-content hidden"><div class="treatment-tag treatment-tag-green">Low-cost</div><p id="affordable-tip" class="treatment-text"></p><div class="cost-row"><span class="cost-label">Est. cost per acre</span><span id="cost-estimate" class="cost-value">--</span></div></div>
+        </div>
+
+        <!-- ── L5: CONFIRM DIAGNOSIS ───────────────────────────────────────── -->
+        <div id="confirm-card" class="confirm-card hidden">
+          <div class="confirm-header">
+            <span class="confirm-icon">🧠</span>
+            <div>
+              <div class="confirm-title">Is this diagnosis correct?</div>
+              <div class="confirm-sub">Your answer personalises the model for your field</div>
+            </div>
+          </div>
+          <div class="confirm-actions">
+            <button class="btn btn-confirm-yes"  data-confirm="correct">✅ Yes, correct</button>
+            <button class="btn btn-confirm-no"   data-confirm="wrong">❌ Wrong disease</button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="result-actions">
+          <button id="new-scan-btn"    class="btn btn-secondary btn-full">🔍 Scan Another Leaf</button>
+          <button id="save-result-btn" class="btn btn-ghost btn-full">💾 Save Image</button>
+        </div>
+
+      </div><!-- /results-section -->
+    </div><!-- /scan-panel -->
+
+    <!-- ── HISTORY PANEL ───────────────────────────────────────────────────── -->
+    <div id="history-panel" class="tab-panel hidden">
+      <div class="history-header">
+        <h3 class="panel-title">Recent Scans</h3>
+        <button id="clear-history-btn" class="btn btn-ghost btn-sm">Clear all</button>
+      </div>
+      <div id="history-empty" class="history-empty"><div class="history-empty-icon">📭</div><p>No scans yet.</p></div>
+      <div id="history-list" class="history-list"></div>
+    </div>
+
+    <!-- ── ALERTS PANEL (Level 5) ─────────────────────────────────────────── -->
+    <div id="alerts-panel" class="tab-panel hidden">
+      <!-- Rendered dynamically by renderOutbreakAlerts() -->
+      <div class="alert-loading"><div class="prep-anim"><div class="prep-circle"></div><span class="prep-emoji">🗺️</span></div><p>Loading outbreak data…</p></div>
+    </div>
+
+    <!-- ── INFO PANEL ──────────────────────────────────────────────────────── -->
+    <div id="info-panel" class="tab-panel hidden">
+      <h3 class="panel-title">Supported Crops</h3>
+      <div class="crop-info-card"><div class="crop-info-header millet"><span class="crop-info-icon">🌾</span><div><div class="crop-info-name">Pearl Millet (Bajra)</div><div class="crop-info-region">Rajasthan · Gujarat · Haryana</div></div></div><div class="crop-info-body"><p>Critical food security crop for 90 million dryland farmers. ~7 million hectares in India.</p><div class="disease-chips"><span class="chip">Downy Mildew</span><span class="chip">Blast Disease</span><span class="chip">Ergot</span></div></div></div>
+      <div class="crop-info-card"><div class="crop-info-header pigeonpea"><span class="crop-info-icon">🫘</span><div><div class="crop-info-name">Pigeon Pea (Arhar / Tur Dal)</div><div class="crop-info-region">Maharashtra · Karnataka · MP</div></div></div><div class="crop-info-body"><p>India's largest producer. Vital protein source for ~1 billion vegetarian Indians.</p><div class="disease-chips"><span class="chip">Fusarium Wilt</span><span class="chip">Sterility Mosaic</span><span class="chip">Phytophthora Blight</span></div></div></div>
+      <div class="crop-info-card"><div class="crop-info-header sorghum"><span class="crop-info-icon">🌽</span><div><div class="crop-info-name">Sorghum (Jowar)</div><div class="crop-info-region">Karnataka · Maharashtra · AP</div></div></div><div class="crop-info-body"><p>Drought-tolerant backbone of semi-arid dryland farming.</p><div class="disease-chips"><span class="chip">Grain Mold</span><span class="chip">Leaf Blight</span><span class="chip">Covered Kernel Smut</span></div></div></div>
+      <div class="tech-card l4-card">
+        <div class="tech-header">🔄 The Level 5 Feedback Loop</div>
+        <div class="tech-steps">
+          <div class="tech-step"><div class="tech-num">1</div><div class="tech-desc">Farmer scans leaf → model diagnoses + estimates severity in ₹</div></div>
+          <div class="tech-step"><div class="tech-num">2</div><div class="tech-desc">Farmer confirms/rejects diagnosis → model calibrates confidence locally</div></div>
+          <div class="tech-step"><div class="tech-num">3</div><div class="tech-desc">After 7 days: "Did treatment work?" → outcome stored, model further calibrated</div></div>
+          <div class="tech-step"><div class="tech-num">4</div><div class="tech-desc">Confirmed outbreaks geo-tagged → nearby farmers get alerts before they see symptoms</div></div>
+          <div class="tech-step"><div class="tech-num">5</div><div class="tech-desc">All data stays on-device — no server, no data cost, works in zero-connectivity villages</div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left"><span class="footer-logo">🌿 KhetRak</span><span class="footer-divider">•</span><span class="footer-sub">All 5 Levels · SIH 2024</span></div>
+      <div class="footer-right"><span class="footer-tag">Offline-first</span><span class="footer-tag">Self-learning</span><span class="footer-tag">Outbreak alerts</span></div>
+    </div>
+  </footer>
+
+</body>
+</html>

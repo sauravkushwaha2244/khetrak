@@ -1,0 +1,122 @@
+{
+  "crops": ["Millet", "Pigeon Pea", "Sorghum"],
+  "classes": [
+    {
+      "id": 0,
+      "crop": "Millet",
+      "disease": "Downy Mildew",
+      "severity_risk": "high",
+      "description": "Caused by Sclerospora graminicola. Shows as yellowish streaks on upper leaf surface with white sporulation below.",
+      "treatment": {
+        "organic": "Spray Trichoderma viride (4g/L water) at 10-day intervals. Remove and destroy infected plants.",
+        "chemical": "Metalaxyl 35% WS seed treatment (6g/kg seed). Spray Mancozeb 75% WP (2.5g/L) at first sign.",
+        "affordable": "Cow urine diluted 1:10 + neem leaf extract as foliar spray every 7 days.",
+        "cost_per_acre": "₹200–₹600"
+      }
+    },
+    {
+      "id": 1,
+      "crop": "Millet",
+      "disease": "Blast Disease",
+      "severity_risk": "high",
+      "description": "Caused by Magnaporthe grisea. Diamond-shaped lesions with gray centers and dark borders on leaves.",
+      "treatment": {
+        "organic": "Apply Pseudomonas fluorescens (2.5kg/ha). Spray neem oil 3% at 15-day intervals.",
+        "chemical": "Tricyclazole 75% WP (0.6g/L water) spray. Seed treatment with Carbendazim 50% WP (2g/kg).",
+        "affordable": "Garlic-chilli extract spray (100g garlic + 50g chilli per 10L water).",
+        "cost_per_acre": "₹150–₹500"
+      }
+    },
+    {
+      "id": 2,
+      "crop": "Millet",
+      "disease": "Ergot",
+      "severity_risk": "medium",
+      "description": "Caused by Claviceps fusiformis. Honey-dew secretions on ears, followed by sclerotia formation.",
+      "treatment": {
+        "organic": "Use clean certified seed. Rogue infected panicles before sclerotia mature.",
+        "chemical": "Propiconazole 25% EC (1ml/L) spray at flowering. Seed treatment with Thiram 75% WS.",
+        "affordable": "Soak seeds in 20% salt solution (200g/L), discard floating seeds before sowing.",
+        "cost_per_acre": "₹100–₹400"
+      }
+    },
+    {
+      "id": 3,
+      "crop": "Pigeon Pea",
+      "disease": "Fusarium Wilt",
+      "severity_risk": "high",
+      "description": "Caused by Fusarium udum. Plants wilt suddenly, yellowing from lower leaves, browning of stem internally.",
+      "treatment": {
+        "organic": "Seed treatment with Trichoderma harzianum (4g/kg). Apply FYM enriched with Trichoderma in furrows.",
+        "chemical": "Carbendazim 50% WP seed treatment (2g/kg). Drenching with Carbendazim 0.1% at disease onset.",
+        "affordable": "Deep summer plowing + crop rotation with non-legume for 2 seasons.",
+        "cost_per_acre": "₹250–₹700"
+      }
+    },
+    {
+      "id": 4,
+      "crop": "Pigeon Pea",
+      "disease": "Sterility Mosaic",
+      "severity_risk": "high",
+      "description": "Spread by eriophyid mite. Plants show bushy appearance, no pod formation, mosaic pattern on leaves.",
+      "treatment": {
+        "organic": "Spray Verticillium lecanii (5g/L) to control mite vector. Use resistant varieties (BSMR 736).",
+        "chemical": "Dimethoate 30% EC (1.5ml/L) to control mite at 30, 45, 60 days after sowing.",
+        "affordable": "Yellow sticky traps (10/acre). Early sowing (June) to escape peak mite season.",
+        "cost_per_acre": "₹180–₹550"
+      }
+    },
+    {
+      "id": 5,
+      "crop": "Pigeon Pea",
+      "disease": "Phytophthora Blight",
+      "severity_risk": "medium",
+      "description": "Water-soaked lesions on stem and branches, rapid wilting and death in waterlogged conditions.",
+      "treatment": {
+        "organic": "Improve drainage. Apply Trichoderma viride (4g/kg seed) as seed treatment.",
+        "chemical": "Metalaxyl + Mancozeb (Ridomil Gold) seed treatment. Spray Dimethomorph 50% WP (1g/L).",
+        "affordable": "Raised bed planting. Avoid waterlogging. Apply ash around plant base.",
+        "cost_per_acre": "₹300–₹800"
+      }
+    },
+    {
+      "id": 6,
+      "crop": "Sorghum",
+      "disease": "Grain Mold",
+      "severity_risk": "medium",
+      "description": "Caused by complex of fungi (Fusarium, Alternaria). Pink/red to black discoloration of grain at maturity.",
+      "treatment": {
+        "organic": "Harvest at physiological maturity. Use resistant varieties (CSH 16).",
+        "chemical": "Thiophanate methyl 70% WP (1g/L) spray at 50% flowering. Propiconazole at grain fill.",
+        "affordable": "Early harvest before rains. Sun drying immediately after harvest.",
+        "cost_per_acre": "₹120–₹450"
+      }
+    },
+    {
+      "id": 7,
+      "crop": "Sorghum",
+      "disease": "Leaf Blight",
+      "severity_risk": "medium",
+      "description": "Caused by Exserohilum turcicum. Large, elliptical, straw-coloured lesions with dark borders on leaves.",
+      "treatment": {
+        "organic": "Spray Pseudomonas fluorescens (2.5kg/ha) in 500L water. Crop rotation.",
+        "chemical": "Mancozeb 75% WP (2.5g/L) spray. Propiconazole 25% EC (1ml/L) at flag leaf stage.",
+        "affordable": "Remove crop debris post-harvest. Balanced NPK fertilisation (avoid excess N).",
+        "cost_per_acre": "₹160–₹500"
+      }
+    },
+    {
+      "id": 8,
+      "crop": "Sorghum",
+      "disease": "Covered Kernel Smut",
+      "severity_risk": "low",
+      "description": "Caused by Sporisorium sorghi. Grain replaced by smut balls covered with a persistent membrane.",
+      "treatment": {
+        "organic": "Use certified smut-free seed. Hot water seed treatment at 55°C for 10 minutes.",
+        "chemical": "Carboxin 37.5% + Thiram 37.5% DS (3g/kg seed) or Carbendazim 50% WP (2g/kg) seed treatment.",
+        "affordable": "Soak seeds in saltwater, discard floaters. Use locally available smut-resistant variety.",
+        "cost_per_acre": "₹80–₹300"
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+# ─── Training Configuration ─────────────────────────────────────────────────
+# Edit these values before running model_training.py
+
+model:
+  backbone: MobileNetV2       # MobileNetV2 | EfficientNetB0
+  alpha: 0.75                 # Width multiplier (smaller = fewer params & faster)
+  input_size: 224             # Must be 224 for MobileNetV2
+  dropout: 0.3
+
+data:
+  plantvillage_path: ./data/plantvillage   # Download path for PlantVillage data
+  custom_path: ./data/custom               # Your field images – folder/<disease>/<img>
+  # Supported crops & diseases:
+  target_crops:
+    - Millet
+    - Pigeon Pea
+    - Sorghum
+  val_split: 0.15             # 15% held out for validation
+  test_split: 0.10            # 10% held out for final test
+
+augmentation:
+  random_flip: true
+  random_brightness: 0.25
+  random_contrast: 0.2
+  random_saturation: [0.6, 1.4]
+  random_hue: 0.05
+  random_zoom: 0.15
+  random_rotation: 20         # degrees
+  gaussian_noise: 0.01        # simulate low-quality cameras
+  jpeg_quality_min: 50        # simulate poor compression
+
+training:
+  epochs: 60
+  batch_size: 32
+  learning_rate: 0.001
+  lr_schedule: cosine_decay   # cosine_decay | step_decay | constant
+  warmup_epochs: 5
+  # Fine-tuning phase (unfreeze top layers of backbone)
+  finetune_at_epoch: 30
+  finetune_lr: 0.0001
+  finetune_layers: 50         # unfreeze last N layers of backbone
+  early_stopping:
+    patience: 10
+    monitor: val_accuracy
+    restore_best: true
+
+output:
+  checkpoint_dir: ./checkpoints
+  tflite_output:  ../model.tflite   # Written to root for web app
+  tfjs_output:    ../public/tfjs_model
+  log_dir:        ./logs
