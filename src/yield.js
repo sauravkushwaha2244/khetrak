@@ -38,6 +38,12 @@ const STAGE_LOSS = {
   unknown:  { min: 0,  max: 0,   typical: 0   },
 };
 
+const CROP_SENSITIVITY = {
+  Millet: 0.95,
+  'Pigeon Pea': 1.0,
+  Sorghum: 0.9,
+};
+
 // Govt scheme eligibility thresholds
 const SCHEME_THRESHOLDS = {
   PMFBY_CLAIM: 33,      // PM Fasal Bima Yojana – claim if >33% crop loss
@@ -58,22 +64,46 @@ export const YieldCalculator = (() => {
    */
   function calculate(crop, stage, severityPct, areaAcres, mandiPrice) {
     const stageLoss    = STAGE_LOSS[stage] || STAGE_LOSS.unknown;
-    // Blend stage-based loss with actual pixel severity for better accuracy
-    const pixelFactor  = severityPct !== null ? severityPct / 100 : 0.5;
-    const blendedLoss  = stageLoss.typical * 0.6 + pixelFactor * (stageLoss.max - stageLoss.min) * 0.4 + stageLoss.min * 0.4;
-    const yieldLossPct = Math.min(90, Math.round(blendedLoss));
+    const sensitivity  = CROP_SENSITIVITY[crop] || 1;
+    const pixelFactor  = severityPct !== null ? Math.min(1, severityPct / 100) : 0.55;
+
+    // More conservative blend: stage drives the estimate, pixel severity only nudges it.
+    const blendedLoss  = stageLoss.typical * 0.7 + pixelFactor * (stageLoss.max - stageLoss.min) * 0.25 + stageLoss.min * 0.15;
+    const adjustedLoss  = Math.max(0, Math.min(85, blendedLoss * sensitivity));
+    const yieldLossPct  = Math.round(adjustedLoss);
 
     const typicalYield  = TYPICAL_YIELD[crop] || 6;
     const totalYield    = typicalYield * areaAcres;
     const quintalsLost  = (yieldLossPct / 100) * totalYield;
     const rupLoss       = quintalsLost * mandiPrice;
-    const rupSaved      = ((stageLoss.max - yieldLossPct) / 100) * totalYield * mandiPrice;
+    const rupSaved      = Math.max(0, ((stageLoss.max - yieldLossPct) / 100) * totalYield * mandiPrice);
 
     // Govt scheme eligibility
     const schemes = [];
-    if (yieldLossPct >= SCHEME_THRESHOLDS.PMFBY_CLAIM)   schemes.push({ name: 'PM Fasal Bima Yojana', code: 'PMFBY',   desc: 'File insurance claim – eligible above 33% crop loss' });
-    if (yieldLossPct >= SCHEME_THRESHOLDS.SDRF_RELIEF)   schemes.push({ name: 'SDRF Relief',          code: 'SDRF',    desc: 'State Disaster Relief Fund – eligible above 50% loss' });
-    if (yieldLossPct >= SCHEME_THRESHOLDS.KRISHI_KENDRA) schemes.push({ name: 'Krishi Kendra Visit',  code: 'KK',      desc: 'Free extension advisory from block agriculture officer' });
+    if (yieldLossPct >= SCHEME_THRESHOLDS.PMFBY_CLAIM) {
+      schemes.push({
+        name: 'PM Fasal Bima Yojana',
+        code: 'PMFBY',
+        desc: 'File insurance claim – eligible above 33% crop loss',
+        link: 'https://pmfby.gov.in/'
+      });
+    }
+    if (yieldLossPct >= SCHEME_THRESHOLDS.SDRF_RELIEF) {
+      schemes.push({
+        name: 'SDRF Relief',
+        code: 'SDRF',
+        desc: 'State Disaster Relief Fund – eligible above 50% loss',
+        link: 'https://ndma.gov.in/'
+      });
+    }
+    if (yieldLossPct >= SCHEME_THRESHOLDS.KRISHI_KENDRA) {
+      schemes.push({
+        name: 'Krishi Kendra Visit',
+        code: 'KK',
+        desc: 'Free extension advisory from block agriculture officer',
+        link: 'https://agriwelfare.gov.in/en/KrishiVigyanKendra'
+      });
+    }
 
     return {
       yieldLossPct,

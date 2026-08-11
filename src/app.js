@@ -463,7 +463,14 @@ function recalcYield() {
   if (schEl) {
     schEl.innerHTML = result.schemes.length === 0
       ? '<p class="scheme-none">No scheme eligibility at current severity level.</p>'
-      : result.schemes.map(s => `<div class="scheme-item"><span class="scheme-code">${s.code}</span><div class="scheme-info"><div class="scheme-name">${s.name}</div><div class="scheme-desc">${s.desc}</div></div></div>`).join('');
+      : result.schemes.map(s => `
+        <a class="scheme-item" href="${s.link}" target="_blank" rel="noopener noreferrer">
+          <span class="scheme-code">${s.code}</span>
+          <div class="scheme-info">
+            <div class="scheme-name">${s.name}</div>
+            <div class="scheme-desc">${s.desc}</div>
+          </div>
+        </a>`).join('');
   }
 }
 
