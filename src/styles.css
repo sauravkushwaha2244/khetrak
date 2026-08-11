@@ -513,12 +513,147 @@ body {
 .cost-label { font-size: 0.78rem; color: var(--clr-text-muted); }
 .cost-value { font-family: var(--font-head); font-weight: 700; color: var(--clr-amber); }
 
+/* ── Yield Card ─────────────────────────────────────────────────────────── */
+yield-card {
+  background: linear-gradient(135deg, rgba(16, 28, 46, 0.96), rgba(11, 21, 35, 0.9));
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  animation: slideUp 0.5s var(--ease-spring);
+}
+.yield-card.hidden { display: none; }
+.yield-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.yield-icon { font-size: 1.3rem; }
+.yield-title {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.yield-subtitle {
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+  margin-top: 2px;
+}
+.yield-inputs {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.yield-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.yield-label {
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+}
+.yield-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  color: var(--clr-text-1);
+  font-family: var(--font-body);
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.yield-input:focus {
+  border-color: var(--clr-green-600);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+.yield-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.yield-stat {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.yield-stat-label {
+  font-size: 0.72rem;
+  color: var(--clr-text-muted);
+  margin-bottom: 4px;
+}
+.yield-stat-val {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--clr-text-1);
+}
+.yield-red { color: var(--clr-red); }
+.yield-green { color: var(--clr-green-400); }
+.yield-schemes-section {
+  border-top: 1px solid var(--clr-border);
+  padding-top: 12px;
+}
+.yield-schemes-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-text-3);
+  margin-bottom: 10px;
+}
+#yield-schemes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scheme-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+}
+.scheme-code {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--clr-green-400);
+  background: rgba(34, 197, 94, 0.12);
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.scheme-info { flex: 1; }
+.scheme-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-text-2);
+  margin-bottom: 3px;
+}
+.scheme-desc {
+  font-size: 0.74rem;
+  color: var(--clr-text-muted);
+  line-height: 1.45;
+}
+.scheme-none {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+}
+
 /* Result actions */
 .result-actions { display: flex; flex-direction: column; gap: 10px; animation: slideUp 0.6s var(--ease-spring); }
 
 /* ── History Panel ────────────────────────────────────────────────────────── */
 .history-header {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  gap: 12px;
+}
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .panel-title { font-family: var(--font-head); font-size: 1.05rem; font-weight: 600; }
 .history-empty {

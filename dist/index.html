@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
-  <script type="module" crossorigin src="./assets/index-53aBIWA8.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CkLgDLHA.css">
+  <script type="module" crossorigin src="./assets/index-v6-XqBJJ.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CX93QcjZ.css">
 </head>
 <body>
 
@@ -57,15 +57,9 @@
         The only app that learns<br/>
         <span class="hero-gradient">from your field, not the lab</span>
       </h1>
-      <p class="hero-subtitle">
-        Real-world robustness · Stage-aware treatment · Yield loss in ₹ ·
-        Disease outbreak alerts · Model that improves with every confirmed scan.
-      </p>
+    
       <div class="stats-bar">
-        <div class="stat"><div class="stat-value">9</div><div class="stat-label">Diseases</div></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><div class="stat-value">5</div><div class="stat-label">Levels</div></div>
-        <div class="stat-divider"></div>
+       
         <div class="stat"><div class="stat-value" id="scan-count">0</div><div class="stat-label">Your scans</div></div>
         <div class="stat-divider"></div>
         <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Offline</div></div>
@@ -74,10 +68,9 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab-btn active"  data-tab="scan-panel"><span class="tab-icon">🔍</span> Scan</button>
-      <button class="tab-btn"         data-tab="history-panel"><span class="tab-icon">📋</span> History</button>
-      <button class="tab-btn"         data-tab="alerts-panel"><span class="tab-icon">🚨</span> Alerts</button>
-      <button class="tab-btn"         data-tab="info-panel"><span class="tab-icon">🌾</span> Crops</button>
+      <button class="tab-btn active" data-tab="scan-panel"><span class="tab-icon">🔍</span> Scan</button>
+      <button class="tab-btn" data-tab="history-panel"><span class="tab-icon">📋</span> History</button>
+      <button class="tab-btn" data-tab="info-panel"><span class="tab-icon">🌾</span> Crops</button>
     </div>
 
     <!-- ── SCAN PANEL ──────────────────────────────────────────────────────── -->
@@ -87,9 +80,7 @@
         <label class="filter-label" for="crop-filter">Crop:</label>
         <select id="crop-filter" class="crop-filter">
           <option value="all">All crops</option>
-          <option value="Millet">🌾 Millet</option>
-          <option value="Pigeon Pea">🫘 Pigeon Pea</option>
-          <option value="Sorghum">🌽 Sorghum</option>
+        
         </select>
       </div>
 
@@ -315,17 +306,16 @@
     <div id="history-panel" class="tab-panel hidden">
       <div class="history-header">
         <h3 class="panel-title">Recent Scans</h3>
-        <button id="clear-history-btn" class="btn btn-ghost btn-sm">Clear all</button>
+        <div class="history-actions">
+          <button id="reset-history-btn" class="btn btn-ghost btn-sm">Reset history</button>
+          <button id="clear-history-btn" class="btn btn-ghost btn-sm">Clear list</button>
+        </div>
       </div>
       <div id="history-empty" class="history-empty"><div class="history-empty-icon">📭</div><p>No scans yet.</p></div>
       <div id="history-list" class="history-list"></div>
     </div>
 
-    <!-- ── ALERTS PANEL (Level 5) ─────────────────────────────────────────── -->
-    <div id="alerts-panel" class="tab-panel hidden">
-      <!-- Rendered dynamically by renderOutbreakAlerts() -->
-      <div class="alert-loading"><div class="prep-anim"><div class="prep-circle"></div><span class="prep-emoji">🗺️</span></div><p>Loading outbreak data…</p></div>
-    </div>
+  
 
     <!-- ── INFO PANEL ──────────────────────────────────────────────────────── -->
     <div id="info-panel" class="tab-panel hidden">
@@ -346,8 +336,8 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-inner">
-      <div class="footer-left"><span class="footer-logo">🌿 KhetRak</span><span class="footer-divider">•</span><span class="footer-sub">All 5 Levels · SIH 2024</span></div>
-      <div class="footer-right"><span class="footer-tag">Offline-first</span><span class="footer-tag">Self-learning</span><span class="footer-tag">Outbreak alerts</span></div>
+      <div class="footer-left"><span class="footer-logo">🌿 KhetRak</span><span class="footer-divider">•</span></div>
+      <div class="footer-right"><span class="footer-tag">Offline-first</span><span class="footer-tag">Self-learning</span></div>
     </div>
   </footer>
 

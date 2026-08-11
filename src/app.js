@@ -1,17 +1,17 @@
 // ─── KhetRak – Main Application (All 5 Levels) ──────────────────────────────
 // L1: Underrepresented crops  L2: On-device offline  L3: Severity estimation
-// L4: Real-world robustness   L5: Feedback loop, outbreak alerts, yield loss,
-//                                 on-device personalization
+// L4: Real-world robustness   L5: Feedback loop, yield loss, on-device personalization
 
 import { OfflineManager, registerServiceWorker } from './offline.js';
 import { SeverityEngine } from './severity.js';
 import { ImagePreprocessor } from './preprocessor.js';
 import { FeedbackSystem } from './feedback.js';
-import { OutbreakSystem } from './outbreak.js';
 import { YieldCalculator, DEFAULT_MANDI_PRICES } from './yield.js';
 import { Personalizer } from './personalizer.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
+const HISTORY_KEY = 'khetrak-history';
+
 let model            = null;
 let metadata         = null;
 let currentImage     = null;
@@ -20,10 +20,58 @@ let preprocessResult = null;
 let isAnalyzing      = false;
 let selectedCrop     = 'all';
 let lastResult       = null;
-let userLocation     = null;
-let history          = JSON.parse(localStorage.getItem('khetrak-history') || '[]');
+let history          = loadHistory();
 
 const $ = (id) => document.getElementById(id);
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.warn('[History] Unable to load history', error);
+    return [];
+  }
+}
+
+function persistHistory(items) {
+  const payload = JSON.stringify(items.slice(0, 8));
+  try {
+    localStorage.setItem(HISTORY_KEY, payload);
+  } catch (error) {
+    if (error.name === 'QuotaExceededError') {
+      const compacted = items
+        .slice(0, 6)
+        .map(entry => ({ ...entry, thumbnail: null }));
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(compacted));
+      } catch (retryError) {
+        console.warn('[History] Storage quota exceeded; clearing history cache', retryError);
+        localStorage.removeItem(HISTORY_KEY);
+      }
+    }
+  }
+}
+
+function createHistoryThumbnail(src) {
+  return new Promise(resolve => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxWidth = 140;
+      const maxHeight = 110;
+      const scale = Math.min(1, maxWidth / img.width, maxHeight / img.height);
+      canvas.width = Math.max(1, Math.floor(img.width * scale));
+      canvas.height = Math.max(1, Math.floor(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
@@ -35,13 +83,6 @@ async function init() {
   renderHistory();
   updateScanCount();
   updatePersonalizationBadge();
-
-
-  // Level 5: fetch location silently for outbreak alerts
-  OutbreakSystem.getUserLocation().then(loc => {
-    userLocation = loc;
-    renderOutbreakAlerts();
-  });
 }
 
 // ── Metadata & Model ──────────────────────────────────────────────────────────
@@ -139,7 +180,14 @@ function setupEventListeners() {
   $('retake-btn').addEventListener('click', resetToUpload);
   $('new-scan-btn').addEventListener('click', resetToUpload);
   $('save-result-btn').addEventListener('click', saveCurrentResult);
-  $('clear-history-btn').addEventListener('click', clearHistory);
+  $('clear-history-btn').addEventListener('click', () => {
+    if (history.length > 0) clearHistory();
+  });
+  $('reset-history-btn').addEventListener('click', () => {
+    if (history.length > 0 || localStorage.getItem(HISTORY_KEY)) {
+      if (confirm('Reset saved scan history and related local data?')) clearHistory();
+    }
+  });
   $('crop-filter').addEventListener('change', e => { selectedCrop = e.target.value; });
 
   // Level 5: yield calculator inputs
@@ -164,7 +212,6 @@ function setupEventListeners() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
       btn.classList.add('active');
       $(btn.dataset.tab).classList.remove('hidden');
-      if (btn.dataset.tab === 'alerts-panel') renderOutbreakAlerts();
     });
   });
   document.querySelectorAll('.treatment-tab').forEach(btn => {
@@ -278,7 +325,7 @@ async function analyzeImage() {
 
     lastResult = { cls, confidence: calibratedConf, rawConf, sev };
     displayResults(lastResult);
-    addToHistory(lastResult);
+    await addToHistory(lastResult);
 
     // Level 5: populate yield calculator defaults
     populateYieldDefaults(cls.crop, sev);
@@ -383,10 +430,6 @@ function handleDiagnosisConfirm(verdict) {
       : `<div class="confirm-done confirm-warn">📝 Noted – confidence adjusted downward for this disease.</div>`;
   }
   updatePersonalizationBadge();
-  // Add to outbreak data if confirmed + has location
-  if (verdict === 'correct' && userLocation) {
-    OutbreakSystem.addReport(userLocation.lat, userLocation.lon, cls.crop, cls.disease, lastResult.sev.stage);
-  }
 }
 
 function updatePersonalizationBadge() {
@@ -424,79 +467,20 @@ function recalcYield() {
   }
 }
 
-
-// ── Level 5: Outbreak Alerts ──────────────────────────────────────────────────
-function renderOutbreakAlerts() {
-  const panel = $('alerts-panel'); if (!panel) return;
-
-  const allOutbreaks = OutbreakSystem.getNationwideOutbreaks();
-
-  // Nearby alerts
-  let nearbyHtml = '';
-  if (userLocation) {
-    const nearby = OutbreakSystem.getNearbyOutbreaks(userLocation.lat, userLocation.lon);
-    const clusters = OutbreakSystem.clusterOutbreaks(nearby);
-    if (clusters.length > 0) {
-      nearbyHtml = `
-        <div class="alert-section-title">📍 Within ${10} km of you</div>
-        ${clusters.map(c => renderAlertCard(c, true)).join('')}`;
-    } else {
-      nearbyHtml = `<div class="alert-empty"><span>✅</span><p>No outbreaks reported within 10 km</p></div>`;
-    }
-  } else {
-    nearbyHtml = `<div class="alert-location-prompt">
-      <button class="btn btn-secondary" id="get-location-btn">📍 Enable location for nearby alerts</button>
-    </div>`;
-  }
-
-  // Nationwide
-  const nationHtml = allOutbreaks.slice(0, 8).map(o => renderAlertCard(o, false)).join('');
-
-  panel.innerHTML = `
-    <h3 class="panel-title">🚨 Disease Outbreak Alerts</h3>
-    <div class="alert-live-badge"><span class="hero-badge-dot"></span> Live surveillance data</div>
-    ${nearbyHtml}
-    <div class="alert-section-title" style="margin-top:20px">🗺️ Nationwide Reports</div>
-    ${nationHtml}
-    <div class="alert-disclaimer">Data from farmer reports + ICAR field surveys. Updated daily.</div>`;
-
-  // Re-attach location button if needed
-  $('get-location-btn')?.addEventListener('click', async () => {
-    userLocation = await OutbreakSystem.getUserLocation();
-    renderOutbreakAlerts();
-  });
-}
-
-function renderAlertCard(c, showDistance) {
-  const level = OutbreakSystem.getAlertLevel(c.totalReports || c.reports, c.severity);
-  const levelColors = { high: '#ef4444', medium: '#f59e0b', low: '#22c55e' };
-  const icons = { Millet: '🌾', 'Pigeon Pea': '🫘', Sorghum: '🌽' };
-  return `
-    <div class="alert-card alert-${level}">
-      <div class="alert-card-left">
-        <span class="alert-crop-icon">${icons[c.crop] || '🌿'}</span>
-        <div>
-          <div class="alert-disease">${c.disease}</div>
-          <div class="alert-crop-name">${c.crop} · ${c.district}</div>
-          <div class="alert-meta">${c.daysAgo === 0 ? 'Today' : `${c.daysAgo}d ago`} · ${(c.totalReports || c.reports)} report${(c.totalReports || c.reports) > 1 ? 's' : ''}${showDistance && c.distanceKm !== undefined ? ` · ${c.distanceKm} km away` : ''}</div>
-        </div>
-      </div>
-      <div class="alert-level-dot" style="background:${levelColors[level]}"></div>
-    </div>`;
-}
-
 // ── History ───────────────────────────────────────────────────────────────────
-function addToHistory({ cls, confidence, sev }) {
+async function addToHistory({ cls, confidence, sev }) {
   const id = Date.now();
+  const thumbnail = await createHistoryThumbnail(currentImage);
+
   history.unshift({
     id, ts: id, disease: cls.disease, crop: cls.crop, severity: cls.severity_risk,
     confidence: Math.round(confidence * 100), sevStage: sev.stage, sevPct: sev.percentage,
     timestamp: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    thumbnail: currentImage,
+    thumbnail,
     preprocessScore: preprocessResult?.qualityScore ?? null, issueCount: preprocessResult?.issues.length ?? 0,
   });
-  if (history.length > 20) history = history.slice(0, 20);
-  localStorage.setItem('khetrak-history', JSON.stringify(history));
+  history = history.slice(0, 8);
+  persistHistory(history);
   renderHistory(); updateScanCount();
 }
 function renderHistory() {
@@ -510,7 +494,7 @@ function renderHistory() {
     const outcomeTag = outcomes.length ? { worked: '✅', partial: '⚠️', failed: '❌' }[outcomes[0].outcome] || '' : '';
     const card = document.createElement('div'); card.className = 'history-card';
     card.innerHTML = `
-      <div class="history-thumb"><img src="${entry.thumbnail}" alt="" loading="lazy"/></div>
+      <div class="history-thumb">${entry.thumbnail ? `<img src="${entry.thumbnail}" alt="" loading="lazy"/>` : '<span class="history-thumb-placeholder">🌿</span>'}</div>
       <div class="history-info">
         <div class="history-disease">${entry.disease} ${outcomeTag}</div>
         <div class="history-crop">${entry.crop} · ${entry.confidence}% conf</div>
@@ -525,11 +509,11 @@ function renderHistory() {
 }
 function replayHistory(e) {
   const cls = metadata.classes.find(c => c.disease === e.disease && c.crop === e.crop); if (!cls) return;
-  currentImage = e.thumbnail; $('preview-img').src = currentImage;
+  currentImage = e.thumbnail || currentImage; $('preview-img').src = currentImage || '';
   displayResults({ cls, confidence: e.confidence / 100, rawConf: e.confidence / 100, sev: { percentage: e.sevPct, stage: e.sevStage || 'unknown' } });
 }
 function clearHistory() {
-  history = []; localStorage.removeItem('khetrak-history');
+  history = []; localStorage.removeItem(HISTORY_KEY);
   FeedbackSystem.clear(); Personalizer.clear();
   renderHistory(); updateScanCount(); updatePersonalizationBadge();
 }
